@@ -4,21 +4,25 @@ A small Python script that reads the USDC/WETH 0.05% pool on Ethereum mainnet an
 
 It is read-only. It only makes `view` calls, holds no wallet or signing key, and cannot trade.
 
-## Setup (Windows PowerShell)
+## Setup (Windows)
 
-You need Python 3.14 and a free API key from an Ethereum RPC provider such as Alchemy. No funds or wallet are needed.
+You need 64-bit Windows and a free API key from an Ethereum RPC provider such as Alchemy. No funds or wallet are needed. You don't need to install Python first.
 
-```powershell
-python -m venv .venv
-.venv\Scripts\python -m pip install -r requirements.txt
-copy .env.example .env
-```
-
-If `python` isn't on your PATH, use the full path to `python.exe` for the first command. On the original machine that is:
+From the project folder, run:
 
 ```powershell
-& "$env:LOCALAPPDATA\Programs\Python\Python314\python.exe" -m venv .venv
+powershell -ExecutionPolicy Bypass -File .\setup.ps1
 ```
+
+The script:
+
+1. Looks for a 64-bit Python 3.14. If there isn't one, it downloads the official installer from python.org, checks it against the SHA-256 checksum python.org publishes, and installs it for your user only. Other Python versions stay installed, and it doesn't change PATH or which Python opens `.py` files.
+2. Builds `.venv` with Python 3.14 and installs `requirements.txt` into it. If an existing `.venv` was built with a different Python, it deletes and rebuilds it.
+3. Creates `.env` from `.env.example` if you don't have one yet.
+
+You can rerun it at any time. It keeps a `.venv` that is already correct. `-ExecutionPolicy Bypass` applies only to this one command; without it, Windows blocks local scripts by default.
+
+The project needs Python 3.14 specifically because `web3` depends on `ckzg`, a C library whose prebuilt Windows packages cover 64-bit Python 3.9 to 3.14 only. On a newer or 32-bit Python, pip tries to compile it and fails unless a C compiler is installed.
 
 Then open `.env` and paste your key after `API_KEY=`. To use Infura, set `RPC_BASE_URL=https://mainnet.infura.io/v3/`.
 
@@ -26,28 +30,21 @@ Then open `.env` and paste your key after `API_KEY=`. To use Infura, set `RPC_BA
 
 ## Run
 
-The packages are installed in `.venv`, not in your system Python, so run the script with the venv's Python:
-
 ```powershell
 .venv\Scripts\python read_pool.py
 ```
 
-If you'd rather type plain `python`, activate the venv first. Your prompt then starts with `(.venv)`. Activation lasts only for the current terminal, so repeat it in each new one.
+That command always works, with no activation needed.
 
-```powershell
-.venv\Scripts\Activate.ps1
-python read_pool.py
-```
-
-If PowerShell says running scripts is disabled on this system, run this once and then activate again:
-
-```powershell
-Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
-```
+`python read_pool.py` also works if you have a `python` command on PATH, whatever its version. If that Python doesn't have the packages, the script restarts itself with the `.venv` Python. Setup doesn't add Python to PATH, so on a machine that had no Python before, use the `.venv` command above.
 
 ## Troubleshooting
 
-**`ModuleNotFoundError: No module named 'dotenv'`** (or `'web3'`): you ran plain `python` without activating the venv, so your system Python ran the script and it doesn't have these packages. Use one of the two commands in [Run](#run). Don't fix it by running `pip install` on the system Python; that leaves you with two separate sets of packages.
+**`Failed to build ckzg` during install:** pip ran on a Python that `ckzg` has no prebuilt package for, usually a newer default Python. Run `setup.ps1` instead of installing by hand. It rebuilds `.venv` with Python 3.14.
+
+**`... is not installed and there is no .venv`:** run `setup.ps1` first.
+
+**`ModuleNotFoundError: No module named 'dotenv'`** (or `'web3'`): `.venv` exists but is missing packages, usually because an earlier install failed. Run `setup.ps1` again. Don't fix it by running `pip install` on your system Python; that installs into a different place from `.venv`.
 
 ## What it reads
 

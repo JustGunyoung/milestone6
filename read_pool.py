@@ -9,13 +9,35 @@ validate what came back, then convert the raw price into a readable one.
 
 import math
 import os
+import subprocess
 import sys
 from datetime import datetime, timezone
 from fractions import Fraction
 from pathlib import Path
 
-from dotenv import load_dotenv
-from web3 import HTTPProvider, Web3
+try:
+    from dotenv import load_dotenv
+    from web3 import HTTPProvider, Web3
+except ImportError as exc:
+    # This Python doesn't have the packages, for example a newer default
+    # `python`. setup.ps1 installs them into .venv with Python 3.14, so rerun
+    # this file with that Python. The env var stops it from looping.
+    if __name__ != "__main__" or os.environ.get("READ_POOL_RELAUNCHED"):
+        raise
+    venv_bin = "Scripts/python.exe" if os.name == "nt" else "bin/python"
+    venv_python = Path(__file__).resolve().parent / ".venv" / venv_bin
+    if not venv_python.exists():
+        sys.exit(
+            f"{exc.name} is not installed and there is no .venv. Run setup first: "
+            "powershell -ExecutionPolicy Bypass -File setup.ps1"
+        )
+    os.environ["READ_POOL_RELAUNCHED"] = "1"
+    script = str(Path(__file__).resolve())
+    try:
+        code = subprocess.call([str(venv_python), script, *sys.argv[1:]])
+    except KeyboardInterrupt:  # Ctrl+C reaches both processes; the child reports it
+        code = 130
+    sys.exit(code if code >= 0 else 128 - code)  # negative = killed by a signal (POSIX)
 
 # --- Inputs ------------------------------------------------------------------
 CHAIN_ID = 1  # Ethereum mainnet
@@ -216,4 +238,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        sys.exit("Interrupted.")
