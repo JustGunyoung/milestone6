@@ -26,9 +26,28 @@ Then open `.env` and paste your key after `API_KEY=`. To use Infura, set `RPC_BA
 
 ## Run
 
+The packages are installed in `.venv`, not in your system Python, so run the script with the venv's Python:
+
 ```powershell
 .venv\Scripts\python read_pool.py
 ```
+
+If you'd rather type plain `python`, activate the venv first. Your prompt then starts with `(.venv)`. Activation lasts only for the current terminal, so repeat it in each new one.
+
+```powershell
+.venv\Scripts\Activate.ps1
+python read_pool.py
+```
+
+If PowerShell says running scripts is disabled on this system, run this once and then activate again:
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+```
+
+## Troubleshooting
+
+**`ModuleNotFoundError: No module named 'dotenv'`** (or `'web3'`): you ran plain `python` without activating the venv, so your system Python ran the script and it doesn't have these packages. Use one of the two commands in [Run](#run). Don't fix it by running `pip install` on the system Python; that leaves you with two separate sets of packages.
 
 ## What it reads
 
